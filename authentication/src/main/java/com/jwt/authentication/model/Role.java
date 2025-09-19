@@ -17,7 +17,7 @@ import java.util.Objects;
 public class Role {
 
     public enum RoleType {
-        ADMIN, USER, STUDENT, LIBRARIAN
+        ADMIN, USER, STUDENT, LIBRARIAN, DOCTOR, PATIENT
     }
 
     @Id
