@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 public class StudentServiceClient {
 
     private final RestTemplate restTemplate;
+    private final InterServiceClient interServiceClient;
 
     @Value("${student.service.url}")
     private String studentServiceUrl;
@@ -23,14 +24,14 @@ public class StudentServiceClient {
 
     public boolean doesStudentExist(Long studentId) {
         String url = "http://localhost:8081/api/students/exists/" + studentId; // URL of Student Service
-        return Boolean.TRUE.equals(restTemplate.getForObject(url, Boolean.class));
+        return Boolean.TRUE.equals(interServiceClient.getForObject(url, Boolean.class));
     }
 
     public StudentDTO getStudentById(Long studentId) {
         String url = studentServiceUrl + "/api/students/" + studentId;
         log.debug("Fetching student from external service: {}", url);
         try {
-            ResponseEntity<StudentDTO> response = restTemplate.getForEntity(url, StudentDTO.class);
+            ResponseEntity<StudentDTO> response = interServiceClient.exchange(url, org.springframework.http.HttpMethod.GET, null, StudentDTO.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
                 log.error("Failed to fetch student. Status: {}", response.getStatusCode());

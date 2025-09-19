@@ -72,4 +72,109 @@
      HEADERS : Content-Type / application/json
                 Authorization / Bearer Token..
 
-  
+
+3] BOOKS (Library Service)
+  I) CREATE BOOK :
+    POST : http://localhost:8082/api/books
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer TOKEN...
+    BODY :
+            {
+                "title": "Introduction to Java Programming",
+                "author": "John Smith",
+                "isbn": "978-1234567890",
+                "genre": "Programming",
+                "totalQuantity": 5,
+                "availableQuantity": 5
+            }
+
+  II) GET ALL BOOKS :
+    GET : http://localhost:8082/api/books
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..
+
+  III) GET BOOK BY ID :
+    GET : http://localhost:8082/api/books/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..
+
+  IV) UPDATE BOOK :
+    PUT : http://localhost:8082/api/books/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..
+    BODY :
+            {
+                "title": "Advanced Java Programming",
+                "author": "John Smith",
+                "isbn": "978-1234567890",
+                "genre": "Programming",
+                "totalQuantity": 10,
+                "availableQuantity": 8
+            }
+
+  V) DELETE BOOK :
+    DELETE : http://localhost:8082/api/books/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..
+
+
+4] RESERVATIONS (Library Service)
+  I) CREATE RESERVATION :
+    POST : http://localhost:8082/api/reservations
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer TOKEN... (STUDENT or USER token)
+    BODY :
+            {
+                "studentId": 1,
+                "bookId": 1,
+                "reservationDate": "2025-09-20"
+            }
+
+  II) GET PENDING RESERVATIONS (LIBRARIAN/ADMIN only):
+    GET : http://localhost:8082/api/reservations/pending
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token.. (LIBRARIAN or ADMIN token)
+
+  III) APPROVE RESERVATION (LIBRARIAN/ADMIN only):
+    PUT : http://localhost:8082/api/reservations/approve/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token.. (LIBRARIAN or ADMIN token)
+
+  IV) REJECT RESERVATION (LIBRARIAN/ADMIN only):
+    PUT : http://localhost:8082/api/reservations/reject/1?action=REJECT
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token.. (LIBRARIAN or ADMIN token)
+
+  V) APPROVE AND CREATE LOAN (LIBRARIAN/ADMIN only):
+    PUT : http://localhost:8082/api/reservations/approve-and-loan/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token.. (LIBRARIAN or ADMIN token)
+
+
+5] LOANS (Library Service)
+  I) CHECKOUT BOOK :
+    POST : http://localhost:8082/api/loans/checkout
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer TOKEN...
+    BODY :
+            {
+                "studentId": 1,
+                "bookId": 1,
+                "checkOutDate": "2023-09-20",
+                "dueDate": "2023-10-04"
+            }
+
+  II) RETURN BOOK :
+    PUT : http://localhost:8082/api/loans/return/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..
+
+  III) GET ACTIVE LOANS BY STUDENT :
+    GET : http://localhost:8082/api/loans/active/student/1
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..
+
+  IV) GET MY ACTIVE LOANS :
+    GET : http://localhost:8082/api/loans/active/me
+    HEADERS : Content-Type / application/json
+              Authorization / Bearer Token..

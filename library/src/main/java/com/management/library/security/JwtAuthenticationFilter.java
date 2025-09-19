@@ -71,7 +71,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 logger.debug("Extracted username: {}", username);
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                     Claims claims = jwtTokenProvider.extractAllClaims(token);
                     if (claims == null) {
                         logger.error("Claims could not be extracted from token");
@@ -79,20 +78,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         return;
                     }
                     Collection<? extends GrantedAuthority> authorities = extractAuthorities(claims);
-                    logger.debug("Authorities: {}", authorities);
+                    logger.debug("Authorities extracted from JWT: {}", authorities);
 
-//                    userDetails.getAuthorities().addAll((List)authorities);
+                    // Create a simple user principal instead of using UserDetailsService
+                    // which returns empty authorities
+                    UserDetails userPrincipal = new org.springframework.security.core.userdetails.User(
+                            username, 
+                            "", 
+                            authorities
+                    );
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    userDetails,
+                                    userPrincipal,
                                     null,
                                     authorities
                             );
 
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    logger.info("Authenticated user: {}", username);
+                    logger.info("Authenticated user: {} with authorities: {}", username, authorities);
                 }
             } else {
                 logger.debug("No valid token found in request");
@@ -157,14 +162,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private Collection<? extends GrantedAuthority> extractAuthorities(Claims claims) {
         if (claims.containsKey("roles")) {
             String rolesString = claims.get("roles", String.class);
+            logger.debug("Roles from JWT: {}", rolesString);
             if (rolesString != null && !rolesString.isEmpty()) {
                 return Arrays.stream(rolesString.split(","))
                         .map(String::trim)
-                        .map(role -> !role.startsWith("ROLE_") ? "ROLE_" + role : role)
-                        .map(SimpleGrantedAuthority::new)
+                        .map(SimpleGrantedAuthority::new) // Don't add ROLE_ prefix, use as-is
                         .collect(Collectors.toList());
             }
         }
+        logger.warn("No roles found in JWT claims");
         return Collections.emptyList();
     }
 

@@ -28,13 +28,43 @@ public class BookService {
     @Transactional
     public BookDTO createBook(BookDTO bookDTO){
         logger.info("Creating new book with title : {}", bookDTO.getTitle());
-        Book book = bookMapper.bookDTOToBook(bookDTO);
-        book.setStatus(BookStatus.AVAILABLE);
-        book.setAvailableCopies(book.getTotalCopies());
-        Book savedBook = bookRepository.save(book);
-
-        logger.debug("Created Book with ID: {}", savedBook.getId());
-        return bookMapper.bookToBookDTO(savedBook);
+        logger.debug("Input BookDTO: title={}, author={}, isbn={}, genre={}, totalQuantity={}, availableQuantity={}", 
+                     bookDTO.getTitle(), bookDTO.getAuthor(), bookDTO.getIsbn(), 
+                     bookDTO.getGenre(), bookDTO.getTotalQuantity(), bookDTO.getAvailableQuantity());
+        
+        try {
+            Book book = bookMapper.bookDTOToBook(bookDTO);
+            
+            // Ensure all required fields are set
+            if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
+                throw new IllegalArgumentException("Book title cannot be null or empty");
+            }
+            if (book.getAuthor() == null || book.getAuthor().trim().isEmpty()) {
+                throw new IllegalArgumentException("Book author cannot be null or empty");
+            }
+            if (book.getIsbn() == null || book.getIsbn().trim().isEmpty()) {
+                throw new IllegalArgumentException("Book ISBN cannot be null or empty");
+            }
+            if (book.getTotalQuantity() <= 0) {
+                throw new IllegalArgumentException("Total quantity must be greater than 0");
+            }
+            
+            // Set default values
+            book.setStatus(BookStatus.AVAILABLE);
+            book.setAvailableQuantity(book.getTotalQuantity());
+            
+            logger.debug("Mapped Book entity: title={}, author={}, isbn={}, genre={}, totalQuantity={}, availableQuantity={}, status={}", 
+                         book.getTitle(), book.getAuthor(), book.getIsbn(), 
+                         book.getGenre(), book.getTotalQuantity(), book.getAvailableQuantity(), book.getStatus());
+            
+            Book savedBook = bookRepository.save(book);
+            logger.info("Successfully created Book with ID: {}", savedBook.getId());
+            return bookMapper.bookToBookDTO(savedBook);
+            
+        } catch (Exception e) {
+            logger.error("Error creating book: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to create book: " + e.getMessage(), e);
+        }
     }
 
     public List<BookDTO> getAllBooks(){
@@ -96,11 +126,11 @@ public class BookService {
         logger.info("Updating Available copies for book ID: {}", bookId);
 
         Book book = getBookEntity(bookId);
-        if (newAvailableCopies < 0 || newAvailableCopies > book.getTotalCopies()){
+        if (newAvailableCopies < 0 || newAvailableCopies > book.getTotalQuantity()){
             throw new IllegalArgumentException("Invalid available Copies count");
         }
 
-        book.setAvailableCopies(newAvailableCopies);
+        book.setAvailableQuantity(newAvailableCopies);
         updateBookStatus(book);
         bookRepository.save(book);
     }
@@ -120,18 +150,18 @@ public class BookService {
     }
 
     private void validateCopiesConsistency(Book book){
-        if (book.getAvailableCopies() > book.getTotalCopies()){
+        if (book.getAvailableQuantity() > book.getTotalQuantity()){
             throw new IllegalArgumentException("Available copies can not exceed total copies");
         }
-        if (book.getAvailableCopies() < 0){
+        if (book.getAvailableQuantity() < 0){
             throw new IllegalArgumentException("Available copies cannot be negative");
         }
     }
 
     private void updateBookStatus(Book book){
-        if (book.getAvailableCopies() == 0){
+        if (book.getAvailableQuantity() == 0){
             book.setStatus(BookStatus.LOANED);
-        } else if (book.getAvailableCopies() > 0) {
+        } else if (book.getAvailableQuantity() > 0) {
             book.setStatus(BookStatus.AVAILABLE);
         }else {
             book.setStatus(BookStatus.UNAVAILABLE);

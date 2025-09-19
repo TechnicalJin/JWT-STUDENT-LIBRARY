@@ -28,11 +28,14 @@ public class Book implements Serializable {
     @Column(nullable = false, unique = true)
     private String isbn;
 
+    @Column(nullable = true)
+    private String genre;
+
     @Column(name = "total_copies", nullable = false)
-    private int totalCopies;
+    private int totalQuantity;
 
     @Column(name = "available_copies", nullable = false)
-    private int availableCopies;
+    private int availableQuantity;
 
     @Enumerated(EnumType.STRING)
     private BookStatus status = BookStatus.AVAILABLE;

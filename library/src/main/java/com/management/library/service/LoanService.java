@@ -10,15 +10,12 @@ import com.management.library.model.enums.BookStatus;
 import com.management.library.model.enums.LoanStatus;
 //import com.management.library.model.enums.NotificationType;
 import com.management.library.repository.LoanRepository;
-import com.management.library.repository.ReservationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -39,17 +36,25 @@ public class LoanService {
     private final StudentServiceClient studentServiceClient;
 //    private final NotificationService notificationService;
 
-    @Autowired
-    private RestTemplate restTemplate;
-
     @Transactional
     public LoanDTO checkOutBook(LoanRequestDTO requestDto, String librarianUsername){
+        return checkOutBook(requestDto, librarianUsername, false);
+    }
+
+    @Transactional
+    public LoanDTO checkOutBook(LoanRequestDTO requestDto, String librarianUsername, boolean bypassReservationCheck){
         logger.info("Attempting to checkout book {} for student {}", requestDto.getBookId(), requestDto.getStudentId());
 
         boolean studentExists = studentServiceClient.doesStudentExist(requestDto.getStudentId());
         if (!studentExists) {
             throw new StudentNotFoundException("Student not found with ID : " + requestDto.getStudentId());
         }
+
+        // Check if student has an approved reservation for this book (unless bypassed)
+        if (!bypassReservationCheck && !reservationService.hasApprovedReservation(requestDto.getBookId(), requestDto.getStudentId())) {
+            throw new ReservationRequiredException("You must have an approved reservation for this book before checkout. Please create a reservation and wait for librarian approval.");
+        }
+
         Book book = bookService.getBookEntity(requestDto.getBookId());
         validateCheckoutEligibility(book, requestDto.getStudentId());
 
@@ -86,9 +91,9 @@ public class LoanService {
         loan.setLibrarianCheckin(librarianUsername);
 
         Book book = bookService.getBookEntity(loan.getBookId());
-        book.setAvailableCopies(book.getAvailableCopies() + 1);
+        book.setAvailableQuantity(book.getAvailableQuantity() + 1);
 
-        if (book.getAvailableCopies() > 0){
+        if (book.getAvailableQuantity() > 0){
             book.setStatus(BookStatus.AVAILABLE);
         }
 
@@ -100,7 +105,7 @@ public class LoanService {
     }
 
     private void validateCheckoutEligibility(Book book, Long studentId){
-        if (book.getAvailableCopies() < 1){
+        if (book.getAvailableQuantity() < 1){
             logger.error("No available copies for book ID: {}", book.getId());
             throw new BookNotAvailableException("No available copies for this book",book.getId());
         }
@@ -113,8 +118,8 @@ public class LoanService {
     }
 
     private void updateBookForCheckout(Book book){
-        book.setAvailableCopies(book.getAvailableCopies() - 1);
-        if (book.getAvailableCopies() == 0){
+        book.setAvailableQuantity(book.getAvailableQuantity() - 1);
+        if (book.getAvailableQuantity() == 0){
             book.setStatus(BookStatus.LOANED);
         }
         bookService.updateBook(book);
@@ -141,7 +146,6 @@ public class LoanService {
             loan.setStatus(LoanStatus.OVERDUE);
             loanRepository.save(loan);
 
-            String message = String.format("Loan for Book ID %s is overdue. Please return it immediately.", loan.getBookId());
 //            notificationService.createNotification(loan.getStudentId(), String.format("Loan for book '%s' (ID: %d) is overdue.",bookService.getBookEntity(loan.getBookId())), NotificationType.OVERDUE);
         });
 

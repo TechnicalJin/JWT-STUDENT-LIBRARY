@@ -6,6 +6,7 @@ import com.management.library.exception.BookNotAvailableException;
 import com.management.library.exception.LoanLimitExceededException;
 import com.management.library.exception.LoanNotFoundException;
 import com.management.library.exception.StudentNotFoundException;
+import com.management.library.exception.ReservationRequiredException;
 import com.management.library.service.LoanService;
 import com.management.library.service.StudentServiceClient;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,8 @@ public class LoanController {
     @ExceptionHandler({
             BookNotAvailableException.class,
             LoanLimitExceededException.class,
-            LoanNotFoundException.class
+            LoanNotFoundException.class,
+            ReservationRequiredException.class
     })
     public ResponseEntity<String> handleExceptions(Exception ex){
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
