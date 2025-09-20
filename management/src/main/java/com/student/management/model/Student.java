@@ -32,6 +32,9 @@ public class Student {
     private String email;
 
     @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
     private String department;
 
     @Column(nullable = false)

@@ -230,4 +230,79 @@ public class StudentServiceImpl implements StudentService {
     public boolean isStudentExists(Long studentId) {
         return studentRepository.existsById(studentId);
     }
+
+    @Override
+    public StudentDto getCurrentStudent(String email) {
+        logger.info("Fetching current student with email: {}", email);
+        try {
+            Student student = studentRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("Student not found with email: " + email));
+            return StudentMapper.mapToStudentDto(student);
+        } catch (Exception e) {
+            logger.error("Error fetching current student with email: {}", email, e);
+            throw new DatabaseOperationException("Failed to fetch current student", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deactivateStudent(Long studentId) {
+        logger.info("Deactivating student with ID: {}", studentId);
+        try {
+            Student student = studentRepository.findById(studentId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
+            
+            student.setEnrollmentStatus(EnrollmentStatus.INACTIVE);
+            studentRepository.save(student);
+            logger.info("Successfully deactivated student with ID: {}", studentId);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error deactivating student with ID: {}", studentId, e);
+            throw new DatabaseOperationException("Failed to deactivate student", e);
+        }
+    }
+
+    @Override
+    public List<StudentDto> searchStudentsByName(String name) {
+        logger.info("Searching students by name: {}", name);
+        try {
+            List<Student> students = studentRepository.findByFirstnameContainingIgnoreCaseOrLastnameContainingIgnoreCase(name, name);
+            return students.stream()
+                    .map(StudentMapper::mapToStudentDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error searching students by name: {}", name, e);
+            throw new DatabaseOperationException("Failed to search students by name", e);
+        }
+    }
+
+    @Override
+    public StudentDto findStudentByEmail(String email) {
+        logger.info("Finding student by email: {}", email);
+        try {
+            Student student = studentRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("Student not found with email: " + email));
+            return StudentMapper.mapToStudentDto(student);
+        } catch (ResourceNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("Error finding student by email: {}", email, e);
+            throw new DatabaseOperationException("Failed to find student by email", e);
+        }
+    }
+
+    @Override
+    public List<StudentDto> getStudentsByDepartment(String department) {
+        logger.info("Fetching students by department: {}", department);
+        try {
+            List<Student> students = studentRepository.findByDepartmentIgnoreCase(department);
+            return students.stream()
+                    .map(StudentMapper::mapToStudentDto)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error fetching students by department: {}", department, e);
+            throw new DatabaseOperationException("Failed to fetch students by department", e);
+        }
+    }
 }

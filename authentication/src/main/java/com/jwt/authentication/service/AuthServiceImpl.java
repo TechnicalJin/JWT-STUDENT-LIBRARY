@@ -6,6 +6,7 @@ import com.jwt.authentication.dto.RegisterDto;
 import com.jwt.authentication.dto.ChangePasswordDto;
 import com.jwt.authentication.dto.UpdateProfileDto;
 import com.jwt.authentication.dto.UserProfileResponse;
+import com.jwt.authentication.dto.StudentRegisterDto;
 import com.jwt.authentication.exception.InvalidLoginException;
 import com.jwt.authentication.exception.InvalidTokenException;
 import com.jwt.authentication.model.RefreshToken;
@@ -128,6 +129,67 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
         logger.info("JWT token generated for newly registered user: {}", savedUser.getUsername());
+        return new JWTAuthResponse(token, refreshToken.getToken());
+    }
+
+    @Override
+    public JWTAuthResponse registerStudent(StudentRegisterDto studentRegisterDto) {
+        logger.info("Attempting to register student: {}", studentRegisterDto.getEmail());
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(studentRegisterDto.getEmail())) {
+            logger.warn("Student registration failed - email already exists: {}", studentRegisterDto.getEmail());
+            throw new InvalidLoginException("Email already exists");
+        }
+
+        // Create username from email (before @ symbol)
+        String username = studentRegisterDto.getEmail().split("@")[0];
+        
+        // Check if username already exists, if so, append a number
+        String originalUsername = username;
+        int counter = 1;
+        while (userRepository.existsByUsername(username)) {
+            username = originalUsername + counter;
+            counter++;
+        }
+
+        // Get the STUDENT role
+        Role studentRole = roleRepository.findByName(Role.RoleType.STUDENT)
+                .orElseThrow(() -> {
+                    logger.error("STUDENT role not found during student registration");
+                    return new RuntimeException("Default role not found");
+                });
+
+        // Create new student user with full name
+        String fullName = studentRegisterDto.getFirstname() + " " + studentRegisterDto.getLastname();
+        
+        User user = User.builder()
+                .name(fullName)
+                .username(username)
+                .email(studentRegisterDto.getEmail())
+                .password(passwordEncoder.encode(studentRegisterDto.getPassword()))
+                .roles(Set.of(studentRole))
+                .build();
+
+        // Save user
+        User savedUser = userRepository.save(user);
+        logger.info("Student registered successfully: {}", savedUser.getEmail());
+
+        // Authenticate the newly registered student and generate JWT token
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        savedUser.getUsername(),
+                        studentRegisterDto.getPassword()
+                )
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String token = jwtTokenProvider.generateToken(authentication);
+
+        // Create refresh token for newly registered student
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
+
+        logger.info("JWT token generated for newly registered student: {}", savedUser.getEmail());
         return new JWTAuthResponse(token, refreshToken.getToken());
     }
 

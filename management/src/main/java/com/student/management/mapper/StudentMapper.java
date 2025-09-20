@@ -47,6 +47,7 @@ public class StudentMapper {
         student.setFirstname(studentDto.getFirstname());
         student.setLastname(studentDto.getLastname());
         student.setEmail(studentDto.getEmail());
+        student.setPassword(studentDto.getPassword());
         student.setDepartment(studentDto.getDepartment());
         student.setGender(studentDto.getGender());
         student.setDateOfBirth(studentDto.getDateOfBirth());
@@ -82,6 +83,28 @@ public class StudentMapper {
         studentResponse.setRoles(student.getRoles().stream()
                 .map(Role::getName)
                 .collect(Collectors.toSet()));
+
+        return studentResponse;
+    }
+
+    public static StudentResponse mapToStudentResponse(StudentDto studentDto) {
+        StudentResponse studentResponse = new StudentResponse();
+        studentResponse.setId(studentDto.getId());
+        studentResponse.setFirstname(studentDto.getFirstname());
+        studentResponse.setLastname(studentDto.getLastname());
+        studentResponse.setEmail(studentDto.getEmail());
+        studentResponse.setDepartment(studentDto.getDepartment());
+        studentResponse.setGender(studentDto.getGender());
+        studentResponse.setDateOfBirth(studentDto.getDateOfBirth());
+        studentResponse.setPhoneNumber(studentDto.getPhoneNumber());
+        studentResponse.setAddress(studentDto.getAddress());
+        studentResponse.setCity(studentDto.getCity());
+        studentResponse.setState(studentDto.getState());
+        studentResponse.setCountry(studentDto.getCountry());
+        studentResponse.setStudentId(studentDto.getStudentId());
+        studentResponse.setEnrollmentDate(studentDto.getEnrollmentDate());
+        studentResponse.setEnrollmentStatus(studentDto.getEnrollmentStatus());
+        studentResponse.setRoles(studentDto.getRoles());
 
         return studentResponse;
     }

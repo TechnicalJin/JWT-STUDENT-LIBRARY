@@ -25,6 +25,10 @@ public class StudentDto {
     @Email(message = "Enter Valid Email")
     private String email;
 
+    @NotEmpty(message = "Password should not be empty")
+    @Size(min = 6, message = "Password should have at least 6 characters")
+    private String password;
+
     @NotEmpty(message = "Department should not be empty")
     private String department;
 

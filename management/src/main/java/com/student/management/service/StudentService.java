@@ -29,4 +29,11 @@ public interface StudentService {
     List<Student> getStudentsEntitiesByEnrollmentDateRange(LocalDate startDate, LocalDate endDate);
 
     boolean isStudentExists(Long studentId);
+
+    // New methods for extended APIs
+    StudentDto getCurrentStudent(String email);
+    void deactivateStudent(Long studentId);
+    List<StudentDto> searchStudentsByName(String name);
+    StudentDto findStudentByEmail(String email);
+    List<StudentDto> getStudentsByDepartment(String department);
 }

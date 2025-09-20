@@ -7,6 +7,7 @@ import com.jwt.authentication.dto.RegisterDto;
 import com.jwt.authentication.dto.ChangePasswordDto;
 import com.jwt.authentication.dto.UpdateProfileDto;
 import com.jwt.authentication.dto.UserProfileResponse;
+import com.jwt.authentication.dto.StudentRegisterDto;
 import com.jwt.authentication.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -42,6 +43,16 @@ public class AuthController {
         JWTAuthResponse jwtAuthResponse = authService.register(registerDto);
 
         logger.info("Registration successful for username: {}", registerDto.getUsername());
+        return ResponseEntity.ok(jwtAuthResponse);
+    }
+
+    @PostMapping("/register-student")
+    public ResponseEntity<JWTAuthResponse> registerStudent(@Valid @RequestBody StudentRegisterDto studentRegisterDto) {
+
+        logger.info("Student registration request received for email: {}", studentRegisterDto.getEmail());
+        JWTAuthResponse jwtAuthResponse = authService.registerStudent(studentRegisterDto);
+
+        logger.info("Student registration successful for email: {}", studentRegisterDto.getEmail());
         return ResponseEntity.ok(jwtAuthResponse);
     }
 

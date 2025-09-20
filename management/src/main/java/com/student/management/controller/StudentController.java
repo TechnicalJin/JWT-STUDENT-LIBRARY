@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -136,6 +137,64 @@ public class StudentController {
         List<StudentResponse> studentResponses = students.stream()
                 .map(StudentMapper::mapToStudentResponse)
                 .collect(Collectors.toList());
+        return ResponseEntity.ok(studentResponses);
+    }
+
+    // New endpoints for extended APIs
+
+    @PreAuthorize("hasAuthority('STUDENT')")
+    @GetMapping("/me")
+    public ResponseEntity<StudentResponse> getCurrentStudent() {
+        logger.info("Fetching current student information");
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        StudentDto studentDto = studentService.getCurrentStudent(username);
+        StudentResponse studentResponse = StudentMapper.mapToStudentResponse(studentDto);
+        logger.info("Current student fetched successfully: {}", username);
+        return ResponseEntity.ok(studentResponse);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<String> deactivateStudent(@PathVariable("id") Long studentId) {
+        logger.info("Deactivating student with ID: {}", studentId);
+        studentService.deactivateStudent(studentId);
+        logger.info("Student deactivated successfully with ID: {}", studentId);
+        return ResponseEntity.ok("Student deactivated successfully");
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STUDENT')")
+    @GetMapping("/search")
+    public ResponseEntity<List<StudentResponse>> searchStudents(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email) {
+        
+        if (name != null && !name.trim().isEmpty()) {
+            logger.info("Searching students by name: {}", name);
+            List<StudentDto> studentDtos = studentService.searchStudentsByName(name.trim());
+            List<StudentResponse> studentResponses = studentDtos.stream()
+                    .map(StudentMapper::mapToStudentResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(studentResponses);
+        } else if (email != null && !email.trim().isEmpty()) {
+            logger.info("Searching student by email: {}", email);
+            StudentDto studentDto = studentService.findStudentByEmail(email.trim());
+            StudentResponse studentResponse = StudentMapper.mapToStudentResponse(studentDto);
+            return ResponseEntity.ok(List.of(studentResponse));
+        } else {
+            logger.warn("Search request without name or email parameter");
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'STUDENT')")
+    @GetMapping("/department/{department}")
+    public ResponseEntity<List<StudentResponse>> getStudentsByDepartment(@PathVariable String department) {
+        logger.info("Fetching students by department: {}", department);
+        List<StudentDto> studentDtos = studentService.getStudentsByDepartment(department);
+        List<StudentResponse> studentResponses = studentDtos.stream()
+                .map(StudentMapper::mapToStudentResponse)
+                .collect(Collectors.toList());
+        logger.info("Found {} students in department: {}", studentResponses.size(), department);
         return ResponseEntity.ok(studentResponses);
     }
 }
