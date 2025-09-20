@@ -2,6 +2,7 @@ package com.jwt.authentication.controller;
 
 import com.jwt.authentication.dto.JWTAuthResponse;
 import com.jwt.authentication.dto.LoginDto;
+import com.jwt.authentication.dto.RefreshTokenRequest;
 import com.jwt.authentication.dto.RegisterDto;
 import com.jwt.authentication.service.AuthService;
 import jakarta.validation.Valid;
@@ -37,6 +38,16 @@ public class AuthController {
         JWTAuthResponse jwtAuthResponse = authService.register(registerDto);
 
         logger.info("Registration successful for username: {}", registerDto.getUsername());
+        return ResponseEntity.ok(jwtAuthResponse);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<JWTAuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+
+        logger.info("Refresh token request received");
+        JWTAuthResponse jwtAuthResponse = authService.refreshToken(refreshTokenRequest.getRefreshToken());
+
+        logger.info("Token refreshed successfully");
         return ResponseEntity.ok(jwtAuthResponse);
     }
 }

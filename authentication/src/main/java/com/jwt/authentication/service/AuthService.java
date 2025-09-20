@@ -8,4 +8,5 @@ import com.jwt.authentication.dto.RegisterDto;
 public interface AuthService {
     JWTAuthResponse login(LoginDto loginDto);
     JWTAuthResponse register(RegisterDto registerDto);
+    JWTAuthResponse refreshToken(String refreshToken);
 }
