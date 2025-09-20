@@ -3,6 +3,9 @@ package com.jwt.authentication.service;
 import com.jwt.authentication.dto.JWTAuthResponse;
 import com.jwt.authentication.dto.LoginDto;
 import com.jwt.authentication.dto.RegisterDto;
+import com.jwt.authentication.dto.ChangePasswordDto;
+import com.jwt.authentication.dto.UpdateProfileDto;
+import com.jwt.authentication.dto.UserProfileResponse;
 import com.jwt.authentication.exception.InvalidLoginException;
 import com.jwt.authentication.exception.InvalidTokenException;
 import com.jwt.authentication.model.RefreshToken;
@@ -162,5 +165,68 @@ public class AuthServiceImpl implements AuthService {
 
         logger.info("Token refreshed successfully for user: {}", user.getUsername());
         return new JWTAuthResponse(newAccessToken, newRefreshToken.getToken());
+    }
+
+    @Override
+    public String changePassword(ChangePasswordDto changePasswordDto) {
+        logger.info("Attempting to change password for current user");
+
+        // Get current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    logger.error("Current user not found: {}", username);
+                    return new InvalidLoginException("User not found");
+                });
+
+        // Verify old password
+        if (!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())) {
+            logger.warn("Invalid old password provided by user: {}", username);
+            throw new InvalidLoginException("Current password is incorrect");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
+        userRepository.save(user);
+
+        logger.info("Password changed successfully for user: {}", username);
+        return "Password changed successfully";
+    }
+
+    @Override
+    public UserProfileResponse updateProfile(UpdateProfileDto updateProfileDto) {
+        logger.info("Attempting to update profile for current user");
+
+        // Get current authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    logger.error("Current user not found: {}", username);
+                    return new InvalidLoginException("User not found");
+                });
+
+        // Check if email is already taken by another user
+        if (!user.getEmail().equals(updateProfileDto.getEmail()) &&
+            userRepository.existsByEmail(updateProfileDto.getEmail())) {
+            logger.warn("Email already exists: {}", updateProfileDto.getEmail());
+            throw new InvalidLoginException("Email already exists");
+        }
+
+        // Update profile
+        user.setName(updateProfileDto.getName());
+        user.setEmail(updateProfileDto.getEmail());
+        User updatedUser = userRepository.save(user);
+
+        logger.info("Profile updated successfully for user: {}", username);
+        return new UserProfileResponse(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getUsername(),
+                updatedUser.getEmail()
+        );
     }
 }

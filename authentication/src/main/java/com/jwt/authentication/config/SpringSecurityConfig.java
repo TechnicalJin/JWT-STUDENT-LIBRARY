@@ -53,7 +53,8 @@ public class SpringSecurityConfig {
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(authorize -> {
-                    authorize.requestMatchers("/api/auth/**").permitAll();
+                    authorize.requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh").permitAll();
+                    authorize.requestMatchers("/api/auth/**").authenticated();
                     authorize.requestMatchers("/api/admin/**").hasRole(adminRole);
                     authorize.requestMatchers("/api/user/**").hasAnyRole(adminRole, userRole);
                     authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
