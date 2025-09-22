@@ -6,6 +6,8 @@ import com.management.library.dto.ReservationRequestDTO;
 import com.management.library.exception.InvalidReservationStatusException;
 import com.management.library.exception.ReservationNotFoundException;
 import com.management.library.exception.StudentNotFoundException;
+import com.management.library.exception.DuplicateReservationException;
+import com.management.library.exception.UnauthorizedAccessException;
 import com.management.library.mapper.LoanMapper;
 import com.management.library.mapper.ReservationMapper;
 import com.management.library.model.Book;
@@ -26,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -49,8 +52,19 @@ public class ReservationService {
     private final LoanMapper loanMapper;
 
     @Transactional
-    public ReservationDTO createReservation(ReservationRequestDTO requestDTO) {
-        logger.info("Creating reservation for student {} and book {}", requestDTO.getStudentId(), requestDTO.getBookId());
+    public ReservationDTO createReservation(ReservationRequestDTO requestDTO, String userEmail) {
+        logger.info("Creating reservation for student {} and book {} by user {}", 
+                   requestDTO.getStudentId(), requestDTO.getBookId(), userEmail);
+        
+        // Get the authenticated student's ID from email
+        Long authenticatedStudentId = getStudentIdByEmail(userEmail);
+        
+        // Security check: Students can only create reservations for themselves
+        if (!authenticatedStudentId.equals(requestDTO.getStudentId())) {
+            logger.warn("Security violation: Student {} tried to create reservation for student {}", 
+                       authenticatedStudentId, requestDTO.getStudentId());
+            throw new UnauthorizedAccessException("You can only create reservations for yourself");
+        }
         
         // Validate student exists
         String url = "http://localhost:8081/api/students/exists/" + requestDTO.getStudentId();
@@ -64,6 +78,26 @@ public class ReservationService {
             bookService.getBookById(requestDTO.getBookId());
         } catch (Exception e) {
             throw new RuntimeException("Book not found with ID: " + requestDTO.getBookId());
+        }
+
+        // Check for duplicate reservations (pending or approved)
+        List<ReservationStatus> activeStatuses = Arrays.asList(
+            ReservationStatus.PENDING, 
+            ReservationStatus.APPROVED
+        );
+        
+        boolean duplicateExists = reservationRepository.existsByBookIdAndStudentIdAndStatusIn(
+            requestDTO.getBookId(), 
+            requestDTO.getStudentId(), 
+            activeStatuses
+        );
+        
+        if (duplicateExists) {
+            logger.warn("Duplicate reservation attempt: Student {} already has active reservation for book {}", 
+                       requestDTO.getStudentId(), requestDTO.getBookId());
+            throw new DuplicateReservationException(
+                "You already have an active reservation for this book"
+            );
         }
 
         Reservation reservation = new Reservation();
@@ -80,9 +114,42 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.PENDING);
 
         Reservation savedReservation = reservationRepository.save(reservation);
-        logger.info("Successfully created reservation with ID: {}", savedReservation.getId());
+        logger.info("Successfully created reservation with ID: {} for student {}", 
+                   savedReservation.getId(), requestDTO.getStudentId());
         
         return reservationMapper.reservationToReservationDTO(savedReservation);
+    }
+    
+    public Long getStudentIdByEmail(String email) {
+        logger.debug("Getting student ID for email: {}", email);
+        try {
+            String url = "http://localhost:8081/api/students/by-email/" + email;
+            
+            // Call the student service to get student details by email
+            org.springframework.http.ResponseEntity<Object> response = interServiceClient.exchange(
+                url, 
+                org.springframework.http.HttpMethod.GET, 
+                null, 
+                Object.class
+            );
+            
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                // Parse the response to extract student ID
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> studentData = (java.util.Map<String, Object>) response.getBody();
+                Object idObj = studentData.get("id");
+                
+                if (idObj instanceof Number) {
+                    return ((Number) idObj).longValue();
+                }
+            }
+            
+            throw new StudentNotFoundException("Student not found with email: " + email);
+            
+        } catch (Exception e) {
+            logger.error("Error getting student ID for email {}: {}", email, e.getMessage());
+            throw new StudentNotFoundException("Could not resolve student ID for email: " + email);
+        }
     }
 
     @Transactional
@@ -198,5 +265,57 @@ public class ReservationService {
 //        );
 
         return reservationMapper.reservationToReservationDTO(reservationRepository.save(reservation));
+    }
+    
+    @Transactional
+    public void cancelReservation(Long reservationId, String studentUsername) {
+        logger.info("Cancelling reservation {} by student {}", reservationId, studentUsername);
+        
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationNotFoundException("Reservation not found"));
+        
+        // Verify the reservation belongs to the student (if needed, you can add student validation here)
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new InvalidReservationStatusException("Only pending reservations can be cancelled", reservation.getStatus().toString());
+        }
+        
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setProcessedDate(LocalDateTime.now());
+        reservation.setProcessedBy(studentUsername);
+        
+        reservationRepository.save(reservation);
+        logger.info("Successfully cancelled reservation {}", reservationId);
+    }
+    
+    public List<ReservationDTO> getReservationsByStudent(Long studentId) {
+        logger.info("Fetching all reservations for student {}", studentId);
+        
+        // Validate student exists
+        String url = "http://localhost:8081/api/students/exists/" + studentId;
+        Boolean studentExists = interServiceClient.getForObject(url, Boolean.class);
+        if (!Boolean.TRUE.equals(studentExists)) {
+            throw new StudentNotFoundException("Student not found with ID : " + studentId);
+        }
+        
+        List<Reservation> reservations = reservationRepository.findByStudentId(studentId);
+        return reservations.stream()
+                .map(reservationMapper::reservationToReservationDTO)
+                .toList();
+    }
+    
+    public List<ReservationDTO> getReservationHistoryByStudent(Long studentId) {
+        logger.info("Fetching reservation history for student {}", studentId);
+        
+        // Validate student exists
+        String url = "http://localhost:8081/api/students/exists/" + studentId;
+        Boolean studentExists = interServiceClient.getForObject(url, Boolean.class);
+        if (!Boolean.TRUE.equals(studentExists)) {
+            throw new StudentNotFoundException("Student not found with ID : " + studentId);
+        }
+        
+        List<Reservation> reservations = reservationRepository.findByStudentIdOrderByReservationDateDesc(studentId);
+        return reservations.stream()
+                .map(reservationMapper::reservationToReservationDTO)
+                .toList();
     }
 }

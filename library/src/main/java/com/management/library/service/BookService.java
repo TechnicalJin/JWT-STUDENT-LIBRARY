@@ -167,4 +167,29 @@ public class BookService {
             book.setStatus(BookStatus.UNAVAILABLE);
         }
     }
+
+    public List<BookDTO> searchBooksByTitle(String title){
+        logger.info("Searching books by title: {}", title);
+        if (title == null || title.trim().isEmpty()) {
+            logger.warn("Empty or null title provided for search");
+            return List.of();
+        }
+        
+        List<Book> books = bookRepository.findByTitleContainingIgnoreCase(title.trim());
+        logger.info("Found {} books matching title: {}", books.size(), title);
+        
+        return books.stream()
+                .map(bookMapper::bookToBookDTO)
+                .collect(Collectors.toList());
+    }
+
+    public boolean isBookAvailable(Long bookId){
+        logger.info("Checking availability for book ID: {}", bookId);
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException("Book not found with ID: " + bookId));
+        
+        boolean available = book.getAvailableQuantity() > 0 && book.getStatus() == BookStatus.AVAILABLE;
+        logger.info("Book ID: {} availability status: {}", bookId, available);
+        return available;
+    }
 }

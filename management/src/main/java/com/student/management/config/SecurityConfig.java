@@ -56,6 +56,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> {
                     authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     authorize.requestMatchers("/api/auth/**").permitAll();
+                    authorize.requestMatchers(HttpMethod.POST, "/api/students").permitAll(); // Allow student creation without auth
                     authorize.anyRequest().authenticated();
                 })
                 .exceptionHandling(exception ->

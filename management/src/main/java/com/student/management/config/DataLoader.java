@@ -77,5 +77,27 @@ public class DataLoader implements CommandLineRunner {
             admin.setRoles(Set.of(adminRole));
             studentRepository.save(admin);
         }
+        
+        // Create simple admin user for testing with email "admin"
+        if (!studentRepository.existsByEmail("admin")) {
+            Student simpleAdmin = new Student();
+            simpleAdmin.setFirstname("Admin");
+            simpleAdmin.setLastname("User");
+            simpleAdmin.setEmail("admin");
+            simpleAdmin.setDepartment("ADMINISTRATION");
+            simpleAdmin.setGender("MALE");
+            simpleAdmin.setDateOfBirth(LocalDate.of(1990, 1, 1));
+            simpleAdmin.setPhoneNumber("+1234567890");
+            simpleAdmin.setAddress("Admin Address");
+            simpleAdmin.setCity("Admin City");
+            simpleAdmin.setState("Admin State");
+            simpleAdmin.setCountry("Admin Country");
+            simpleAdmin.setStudentId("ADMIN001");
+            simpleAdmin.setEnrollmentDate(LocalDate.now());
+            simpleAdmin.setEnrollmentStatus(EnrollmentStatus.ACTIVE);
+            simpleAdmin.setPassword(passwordEncoder.encode("admin"));
+            simpleAdmin.setRoles(Set.of(adminRole));
+            studentRepository.save(simpleAdmin);
+        }
     }
 }

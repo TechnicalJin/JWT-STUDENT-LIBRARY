@@ -11,6 +11,7 @@ import com.student.management.repository.StudentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +26,12 @@ public class StudentServiceImpl implements StudentService {
     private static final Logger logger = LoggerFactory.getLogger(StudentServiceImpl.class);
     private final StudentRepository studentRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public StudentServiceImpl(StudentRepository studentRepository, RoleRepository roleRepository) {
+    public StudentServiceImpl(StudentRepository studentRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.studentRepository = studentRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -53,6 +56,12 @@ public class StudentServiceImpl implements StudentService {
             }
 
             Student student = StudentMapper.mapToStudent(studentDto);
+
+            // Encode the password before saving
+            if (studentDto.getPassword() != null && !studentDto.getPassword().isEmpty()) {
+                student.setPassword(passwordEncoder.encode(studentDto.getPassword()));
+                logger.debug("Password encoded for student: {}", studentDto.getEmail());
+            }
 
             Role studentRole = roleRepository.findByName("STUDENT")
                     .orElseThrow(() -> {

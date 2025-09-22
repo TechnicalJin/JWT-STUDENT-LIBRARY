@@ -82,4 +82,16 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleStudentServiceException(StudentServiceException ex, WebRequest request) {
         return ErrorResponse.of(HttpStatus.BAD_GATEWAY, ex.getMessage(), request.getDescription(false));
     }
+
+    @ExceptionHandler(DuplicateReservationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDuplicateReservation(DuplicateReservationException ex, WebRequest request) {
+        return ErrorResponse.of(HttpStatus.CONFLICT, ex.getMessage(), request.getDescription(false));
+    }
+
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleUnauthorizedAccess(UnauthorizedAccessException ex, WebRequest request) {
+        return ErrorResponse.of(HttpStatus.FORBIDDEN, ex.getMessage(), request.getDescription(false));
+    }
 }

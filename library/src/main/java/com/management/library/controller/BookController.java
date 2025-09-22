@@ -74,4 +74,32 @@ public class BookController {
         logger.info("Book deleted successfully with ID: {}", id);
         return ResponseEntity.ok("Book deleted successfully");
     }
+
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LIBRARIAN', 'STUDENT', 'USER')")
+    public ResponseEntity<List<BookDTO>> searchBooks(@RequestParam String title){
+        logger.info("Searching books with title: {}", title);
+        try {
+            List<BookDTO> books = bookService.searchBooksByTitle(title);
+            logger.info("Found {} books matching title: {}", books.size(), title);
+            return ResponseEntity.ok(books);
+        } catch (Exception e) {
+            logger.error("Error searching books: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @GetMapping("/{id}/availability")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'LIBRARIAN', 'STUDENT', 'USER')")
+    public ResponseEntity<Boolean> checkBookAvailability(@PathVariable Long id){
+        logger.info("Checking availability for book with ID: {}", id);
+        try {
+            boolean available = bookService.isBookAvailable(id);
+            logger.info("Book ID: {} availability status: {}", id, available);
+            return ResponseEntity.ok(available);
+        } catch (Exception e) {
+            logger.error("Error checking book availability: {}", e.getMessage());
+            throw e;
+        }
+    }
 }

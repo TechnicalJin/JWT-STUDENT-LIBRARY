@@ -48,8 +48,22 @@ public class StudentController {
         return studentRepository.existsById(studentId);
     }
 
+    @GetMapping("/by-email/{email}")
+    public ResponseEntity<StudentResponse> getStudentByEmail(@PathVariable String email) {
+        logger.debug("Fetching student with email: {}", email);
+        try {
+            Student student = studentRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Student not found with email: " + email));
+            StudentResponse studentResponse = StudentMapper.mapToStudentResponse(student);
+            logger.debug("Student found: {}", studentResponse.getEmail());
+            return ResponseEntity.ok(studentResponse);
+        } catch (Exception e) {
+            logger.error("Error fetching student by email {}: {}", email, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+
     @PostMapping
     public ResponseEntity<StudentDto> createStudent(@Valid @RequestBody StudentDto studentDto) {
         logger.info("Creating new student: {}", studentDto.getEmail());
