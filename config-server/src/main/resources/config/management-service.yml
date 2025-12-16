@@ -1,0 +1,30 @@
+# Student Management Service Configuration
+server:
+  port: 8081
+
+spring:
+  application:
+    name: management-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/student_management
+    username: ${database.mysql.username}
+    password: ${database.mysql.password}
+    driver-class-name: ${database.mysql.driver-class-name}
+    initialization-mode: always
+  jpa:
+    generate-ddl: true
+
+# Service-specific JWT configuration
+app:
+  jwt:
+    secret: ${app.jwt.secret}
+    expiration-milliseconds: ${app.jwt.expiration-milliseconds}
+  roles:
+    student: ${app.roles.student}
+    admin: ${app.roles.admin}
+
+# Inter-service communication
+library:
+  service:
+    base-url: http://localhost:8082
+    register-student-endpoint: /api/library/students

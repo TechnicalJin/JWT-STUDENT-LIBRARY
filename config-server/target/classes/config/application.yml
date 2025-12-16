@@ -1,0 +1,63 @@
+# Common Configuration for all services
+# This file contains shared properties across all microservices
+
+# JWT Configuration and Role Configuration (centralized)
+app:
+  jwt:
+    secret: daf66e01593f61a15b857cf433aae03a005812b31234e149036bcc8dee755dbb
+    expiration-milliseconds: 86400000
+    refresh-expiration-milliseconds: 604800000
+    token-prefix: Bearer
+    token-header: Authorization
+  roles:
+    admin: ADMIN
+    user: USER
+    student: STUDENT
+    librarian: LIBRARIAN
+
+# Database Configuration (common MySQL settings)
+database:
+  mysql:
+    username: root
+    password: Varun@2005
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# JPA Configuration
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+# Logging Configuration
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.security: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+
+# Eureka Client Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

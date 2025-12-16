@@ -23,12 +23,12 @@ public class StudentServiceClient {
 
 
     public boolean doesStudentExist(Long studentId) {
-        String url = "http://localhost:8081/api/students/exists/" + studentId; // URL of Student Service
+        String url = "http://management-service/api/students/exists/" + studentId; // Use service name for Eureka
         return Boolean.TRUE.equals(interServiceClient.getForObject(url, Boolean.class));
     }
 
     public StudentDTO getStudentById(Long studentId) {
-        String url = studentServiceUrl + "/api/students/" + studentId;
+        String url = "http://management-service/api/students/" + studentId; // Use service name for Eureka
         log.debug("Fetching student from external service: {}", url);
         try {
             ResponseEntity<StudentDTO> response = interServiceClient.exchange(url, org.springframework.http.HttpMethod.GET, null, StudentDTO.class);

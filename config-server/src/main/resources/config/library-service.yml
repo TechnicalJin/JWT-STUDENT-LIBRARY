@@ -1,0 +1,23 @@
+# Library Service Configuration
+server:
+  port: 8082
+
+spring:
+  application:
+    name: library-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/library
+    username: ${database.mysql.username}
+    password: ${database.mysql.password}
+    driver-class-name: ${database.mysql.driver-class-name}
+
+# Service-specific JWT configuration
+app:
+  jwt:
+    secret: ${app.jwt.secret}
+    expiration-milliseconds: ${app.jwt.expiration-milliseconds}
+
+# Inter-service communication
+student:
+  service:
+    url: http://localhost:8081

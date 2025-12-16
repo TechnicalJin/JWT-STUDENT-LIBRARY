@@ -1,0 +1,21 @@
+# API Gateway Configuration
+server:
+  port: 8083
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+# JWT Configuration (inherited from common config)
+app:
+  jwt:
+    secret: ${app.jwt.secret}
+    expiration-milliseconds: ${app.jwt.expiration-milliseconds}
+    token-prefix: ${app.jwt.token-prefix}
+    token-header: ${app.jwt.token-header}
